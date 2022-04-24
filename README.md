@@ -1,0 +1,1 @@
+A simple emulator for the [Manchester Baby](https://en.wikipedia.org/wiki/Manchester_Baby), also known as the "Small-Scale Experimental Machine", an early computer. It requires the `bitarray` module from PyPI.
