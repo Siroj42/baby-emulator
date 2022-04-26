@@ -1,11 +1,13 @@
 from bitarray import bitarray
 from bitarray.util import *
 import program_loader
+import time
 
 # Define output CRT modes
 OUTPUT_MAIN = 1
 OUTPUT_ACC = 2
 OUTPUT_INSTRUCTION = 3
+OUTPUT_NONE = 0
 
 # Define programming instructions
 INSTRUCTION_JMP = bitarray('000')
@@ -45,32 +47,26 @@ store = program_loader.load_program(fn)
 acc = 0
 
 # Main loop
-inst_nr = 0
+inst_nr = 1
 stopped = False
 try:
     while not stopped:
-        inst_arg = ba2int(store[inst_nr][:13], signed=True)
-        if store[inst_nr][13:16] == INSTRUCTION_JMP:
-            print("JMP")
-            inst_nr = ba2int(store[inst_arg], signed=True) -1
-        elif store[inst_nr][13:16] == INSTRUCTION_JRP:
-            print("JRP")
-            inst_nr += ba2int(store[inst_arg], signed=True)
-        elif store[inst_nr][13:16] == INSTRUCTION_LDN:
-            print("LDN")
-            acc = 0 - ba2int(store[ba2int(store[inst_nr][:13])], signed=True)
-        elif store[inst_nr][13:16] == INSTRUCTION_STO:
-            print("STO")
-            store[ba2int(store[inst_nr][:13])] = int2ba(acc, signed=True, length=32)
-        elif store[inst_nr][13:16] == INSTRUCTION_SUB:
-            print("SUB")
-            acc -= ba2int(store[ba2int(store[inst_nr][:13])], signed=True)
-        elif store[inst_nr][13:16] == INSTRUCTION_CMP:
-            print("CMP")
+        inst = store[inst_nr-1][13:16]
+        inst_arg = ba2int(store[inst_nr-1][:13], signed=True)
+        if inst == INSTRUCTION_JMP:
+            inst_nr = ba2int(store[inst_arg-1], signed=True)
+        elif inst == INSTRUCTION_JRP:
+            inst_nr += ba2int(store[inst_arg-1], signed=True)
+        elif inst == INSTRUCTION_LDN:
+            acc = 0 - ba2int(store[inst_arg-1], signed=True)
+        elif inst == INSTRUCTION_STO:
+            store[inst_arg-1] = int2ba(acc, signed=True, length=32)
+        elif inst == INSTRUCTION_SUB:
+            acc -= ba2int(store[inst_arg-1], signed=True)
+        elif inst == INSTRUCTION_CMP:
             if acc < 0:
                 inst_nr += 1
-        elif store[inst_nr][13:16] == INSTRUCTION_STP:
-            print("STP")
+        elif inst == INSTRUCTION_STP:
             stopped = True
         inst_nr += 1
 
@@ -80,7 +76,7 @@ try:
             for s in store:
                 print(s)
                 pass
-        elif output_mode == OUTPUT_ACC:
-            print(acc)
+        elif output_mode == OUTPUT_ACC: 
+            print("ACC:", acc)
 except KeyboardInterrupt:
     print("Shutting down...")
