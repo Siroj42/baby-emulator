@@ -41,7 +41,13 @@ store[31] = int2ba(3000, length=32)
 
 # Instead load a program from the given file
 fn = input("File: ")
-store = program_loader.load_program(fn)
+if ".snp" in fn:
+	with open(fn, "r") as f:
+		lines = f.readlines()
+		for l in range(int(lines[0])):
+			store[l] = bitarray(lines[l+1][5:37])
+else:		
+	store = program_loader.load_program(fn)
 
 # Create an empty accumulator
 acc = 0
@@ -49,20 +55,47 @@ acc = 0
 # Main loop
 inst_nr = 1
 stopped = False
+
+def conv(x):
+    x = str(x)[10:len(str(x))-2]
+    y = 0
+    for i in x:
+        if i == "0":
+    	    y += 1
+        else:
+            break
+    x = x[y:][::-1]
+    x = bitarray(x)
+    x = ba2int(x, signed=True)
+    return x
+
 try:
     while not stopped:
         inst = store[inst_nr-1][13:16]
+        print(store[inst_nr-1])
         inst_arg = ba2int(store[inst_nr-1][:13], signed=True)
         if inst == INSTRUCTION_JMP:
-            inst_nr = ba2int(store[inst_arg-1], signed=True)
+            x = int2ba(inst_arg, signed=True, length=13)
+            x = conv(x)
+            print("jumped according to storage position", x, store[x])
+            print("jumping to", conv(store[x]))
+            inst_nr = conv(store[x])
         elif inst == INSTRUCTION_JRP:
-            inst_nr += ba2int(store[inst_arg-1], signed=True)
+            x = int2ba(inst_arg, signed=True, length=13)
+            x = conv(x)
+            inst_nr += conv(store[x])
         elif inst == INSTRUCTION_LDN:
-            acc = 0 - ba2int(store[inst_arg-1], signed=True)
+            x = int2ba(inst_arg, signed=True, length=13)
+            x = conv(x)
+            acc = 0 - conv(store[x])
         elif inst == INSTRUCTION_STO:
-            store[inst_arg-1] = int2ba(acc, signed=True, length=32)
+            x = int2ba(inst_arg, signed=True, length=13)
+            x = conv(x)
+            store[x] = int2ba(acc, signed=True, length=32)[::-1]
         elif inst == INSTRUCTION_SUB:
-            acc -= ba2int(store[inst_arg-1], signed=True)
+            x = int2ba(inst_arg, signed=True, length=13)
+            x = conv(x)
+            acc -= conv(store[x])
         elif inst == INSTRUCTION_CMP:
             if acc < 0:
                 inst_nr += 1
@@ -77,6 +110,7 @@ try:
                 print(s)
                 pass
         elif output_mode == OUTPUT_ACC: 
-            print("ACC:", acc)
+            #print("ACC:", acc)
+            pass
 except KeyboardInterrupt:
     print("Shutting down...")
